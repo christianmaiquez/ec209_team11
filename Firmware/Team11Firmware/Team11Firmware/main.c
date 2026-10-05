@@ -1,4 +1,23 @@
 /*
+ * Team11Firmware.c
+ *
+ * Created: 5/10/2026 5:19:17 pm
+ * Author : chris
+ */ 
+
+#include <avr/io.h>
+
+// ADC 
+int main(void){
+	uint8_t ADC_lsb = 0xA4;
+	uint8_t ADC_msb = 0x09;
+	uint16_t ADC_12bit = (ADC_msb << 8) | ADC_lsb;
+	printf(ADC_12bit);
+}
+
+// UART 
+
+/*
  * main.c
  *
  *
