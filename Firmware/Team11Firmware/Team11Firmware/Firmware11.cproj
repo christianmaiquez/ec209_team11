@@ -114,6 +114,12 @@
     <Compile Include="adc.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="calculations.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="calculations.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="common.h">
       <SubType>compile</SubType>
     </Compile>
