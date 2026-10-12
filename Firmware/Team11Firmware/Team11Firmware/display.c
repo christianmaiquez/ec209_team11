@@ -3,6 +3,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/atomic.h>
+#include "calculations.h"
 
 // Shift register pins (from the Proteus schematic)
 #define SH_PORT PORTC
@@ -92,6 +93,19 @@ void send_next_character_to_display(void)
 	*ds_port[pos] &= ~(1 << ds_bit[pos]);         // enable this digit (0 = on)
 
 	disp_position = (pos + 1) & 3;
+}
+
+typedef enum { SHOW_VOLTAGE, SHOW_CURRENT, SHOW_POWER, SHOW_COUNT } quantity_t;
+static quantity_t next_quantity = SHOW_VOLTAGE;
+
+void display_show_next(void)
+{
+	switch (next_quantity) {
+		case SHOW_VOLTAGE:  display_show_number(measure_vrms_v(),  SEG_U); break;
+		case SHOW_CURRENT:  display_show_number(measure_ipk_a(),   SEG_A); break;
+		default:            display_show_number(measure_power_w(), SEG_P); break;
+	}
+	next_quantity = (next_quantity + 1) % SHOW_COUNT;
 }
 
 // NOBLOCK: lets the ADC ISR preempt this one so sample timing stays accurate

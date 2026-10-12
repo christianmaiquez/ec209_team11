@@ -24,4 +24,17 @@ float calc_peak(const uint16_t *v, uint8_t n);   // mV at the ADC pin (offset re
 // v and i both have n entries. Returns mW at the source.
 float calc_power(const uint16_t *v, const uint16_t *i, uint8_t n);
 
+
+// ---- Measurement: capture samples and get the results (uses the ADC) ----
+#define USE_FAKE_DATA  0     // 1 = computed sine waves, 0 = real ADC samples
+
+void  measure_capture(void);     // take a fresh set of SAMPLE_COUNT v and i samples
+
+// Results from the most recent capture
+float measure_vrms_v(void);      // RMS voltage at the source, V
+float measure_ipk_a(void);       // peak load current, A
+float measure_power_w(void);     // average real power, W
+float measure_v_dc_mv(void);     // average level at the ADC pin, mV (0 = nothing connected)
+float measure_i_dc_mv(void);
+
 #endif

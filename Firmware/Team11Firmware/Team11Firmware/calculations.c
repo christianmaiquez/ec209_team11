@@ -1,5 +1,6 @@
 #include "calculations.h"
 #include <math.h>
+#include "adc.h"
 
 #define SQUARE_ROOT_OF_2  1.41421356f
 
@@ -62,3 +63,29 @@ uint8_t number_of_samples)
 	// mV (source) x mA (load) = uW, divide by 1000 for mW
 	return average_power * V_GAIN * I_GAIN / 1000.0f;
 }
+
+
+// ---------------------------------------------------------------------------
+// Measurement: capture + results
+// ---------------------------------------------------------------------------
+static uint16_t sample_v[SAMPLE_COUNT];   // voltage samples, mV at the ADC pin
+static uint16_t sample_i[SAMPLE_COUNT];   // current samples, mV at the ADC pin
+
+void measure_capture(void)
+{
+	#if USE_FAKE_DATA
+	// Computed test signals: 500Hz, 10 samples per cycle, 2.5V offset
+	for (uint8_t k = 0; k < SAMPLE_COUNT; k++) {
+		sample_v[k] = 2500 + 2000 * sinf(2 * M_PI * k / 10.0f);
+		sample_i[k] = 2500 + 1000 * sinf(2 * M_PI * (k + 0.5f) / 10.0f);
+	}
+	#else
+	adc_capture(sample_v, sample_i, SAMPLE_COUNT);
+	#endif
+}
+
+float measure_vrms_v(void)   { return calc_rms(sample_v, SAMPLE_COUNT)  * V_GAIN / 1000.0f; }
+float measure_ipk_a(void)    { return calc_peak(sample_i, SAMPLE_COUNT) * I_GAIN / 1000.0f; }
+float measure_power_w(void)  { return calc_power(sample_v, sample_i, SAMPLE_COUNT) / 1000.0f; }
+float measure_v_dc_mv(void)  { return average(sample_v, SAMPLE_COUNT); }
+float measure_i_dc_mv(void)  { return average(sample_i, SAMPLE_COUNT); }
