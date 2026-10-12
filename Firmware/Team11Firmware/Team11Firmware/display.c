@@ -4,22 +4,21 @@
 #include <avr/interrupt.h>
 #include <util/atomic.h>
 
-// ---- TODO: set these from the Proteus schematic ----
-#define SH_PORT PORTB
-#define SH_DDR  DDRB
-#define SH_CP   PB0
-#define SH_DS   PB1
-#define SH_ST   PB2
+// Shift register pins (from the Proteus schematic)
+#define SH_PORT PORTC
+#define SH_DDR  DDRC
+#define SH_CP   PC3
+#define SH_DS   PC4
+#define SH_ST   PC5
 
-// Ds1 (leftmost) to Ds4 (rightmost). Each can be on a different port.
+// Ds1 (leftmost) to Ds4 (rightmost)
 static volatile uint8_t * const ds_port[4] = { &PORTD, &PORTD, &PORTD, &PORTD };
 static volatile uint8_t * const ds_ddr[4]  = { &DDRD,  &DDRD,  &DDRD,  &DDRD  };
 static const uint8_t ds_bit[4]             = { PD4,    PD5,    PD6,    PD7    };
-// -----------------------------------------------------
 
 #define SEG_DP 0x80
 
-// QP.1 answers: dp = MSB, a = LSB
+// dp = MSB, a = LSB
 static const uint8_t seg_pattern[10] = {
 	0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F
 };
@@ -49,7 +48,7 @@ void display_show_number(float value, uint8_t unit_pattern)
 	uint16_t n;
 	uint8_t dp;                                   // which digit gets the dp (3 = none)
 
-	if (value < 0.0f) value = 0.0f;
+	if (value < 0.0f) value = 0.0f;               // no minus sign available
 
 	if (value < 9.995f) {
 		n = (uint16_t)(value * 100.0f + 0.5f);  dp = 0;     // x.xx
@@ -67,7 +66,7 @@ void display_show_number(float value, uint8_t unit_pattern)
 	p[3] = unit_pattern;
 	if (dp < 3) p[dp] |= SEG_DP;
 
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {          // don't let the ISR see half an update
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		for (uint8_t k = 0; k < 4; k++) disp_characters[k] = p[k];
 	}
 }
@@ -77,8 +76,7 @@ void send_next_character_to_display(void)
 	uint8_t pos = disp_position;
 	uint8_t pattern = disp_characters[pos];
 
-	// Shift the pattern in, MSB first (SH_CP and SH_ST are low between calls)
-	for (int8_t b = 7; b >= 0; b--) {
+	for (int8_t b = 7; b >= 0; b--) {             // shift in, MSB first
 		if (pattern & (1 << b)) SH_PORT |=  (1 << SH_DS);
 		else                    SH_PORT &= ~(1 << SH_DS);
 		SH_PORT |=  (1 << SH_CP);
@@ -96,7 +94,7 @@ void send_next_character_to_display(void)
 	disp_position = (pos + 1) & 3;
 }
 
-// NOBLOCK: re-enables interrupts so the ADC ISR can still preempt this one
+// NOBLOCK: lets the ADC ISR preempt this one so sample timing stays accurate
 ISR(TIMER1_COMPA_vect, ISR_NOBLOCK)
 {
 	send_next_character_to_display();

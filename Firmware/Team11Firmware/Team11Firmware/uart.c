@@ -15,7 +15,7 @@ void uart_init(void)
 
 void uart_putc(char c)
 {
-	while (!(UCSR0A & (1 << UDRE0))) {}        // wait for empty data register
+	while (!(UCSR0A & (1 << UDRE0))) {}
 	UDR0 = c;
 }
 
@@ -26,9 +26,9 @@ void uart_puts(const char *s)
 	}
 }
 
-void uart_put_uint(uint16_t value)
+void uart_put_uint32(uint32_t value)
 {
-	char digits[5];
+	char digits[10];
 	uint8_t n = 0;
 
 	if (value == 0) {
@@ -44,20 +44,21 @@ void uart_put_uint(uint16_t value)
 	}
 }
 
-void uart_put_uint32(uint32_t value)
+void uart_put_uint(uint16_t value)
 {
-	char d[10];
-	uint8_t n = 0;
-	if (value == 0) { uart_putc('0'); return; }
-	while (value > 0) { d[n++] = '0' + (value % 10); value /= 10; }
-	while (n > 0) uart_putc(d[--n]);
+	uart_put_uint32(value);
 }
 
-void uart_put_float1(float x)
+void uart_put_float2(float x)
 {
-	if (x < 0) { uart_putc('-'); x = -x; }
-	uint32_t tenths = (uint32_t)(x * 10.0f + 0.5f);
-	uart_put_uint32(tenths / 10);
+	if (x < 0.0f) {
+		uart_putc('-');
+		x = -x;
+	}
+	uint32_t hundredths = (uint32_t)(x * 100.0f + 0.5f);
+	uart_put_uint32(hundredths / 100);
 	uart_putc('.');
-	uart_putc('0' + (tenths % 10));
+	uint8_t frac = hundredths % 100;
+	uart_putc('0' + frac / 10);
+	uart_putc('0' + frac % 10);
 }

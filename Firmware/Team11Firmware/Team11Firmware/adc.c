@@ -5,17 +5,17 @@
 
 #define ADC_VREF_MV   5000UL
 #define ADC_MAX_COUNT 1023UL
-#define MAX_PAIRS     49          // SAMPLE_COUNT + 1
+#define MAX_PAIRS     40          // must be >= SAMPLE_COUNT
 
-static uint16_t raw[2][MAX_PAIRS];
+static uint16_t raw[2][MAX_PAIRS];            // [0] = ADC0 (voltage), [1] = ADC1 (current)
 static volatile uint8_t sample_count;
 static volatile uint8_t capture_done;
-static uint8_t target_samples;
+static volatile uint8_t target_samples;
 
 void adc_init(void)
 {
-	ADMUX  = (1 << REFS0);                       // AVCC ref, ADC0
-	ADCSRA = (1 << ADEN) | (1 << ADPS1) | (1 << ADPS0);  // prescaler 8 -> 250kHz, 52us/conversion
+	ADMUX  = (1 << REFS0);                                  // AVCC reference, ADC0
+	ADCSRA = (1 << ADEN) | (1 << ADPS1) | (1 << ADPS0);     // prescaler 8 -> 250kHz, 52us/conversion
 	ADCSRB = 0;
 	DIDR0  = (1 << ADC0D) | (1 << ADC1D) | (1 << ADC2D);
 }
@@ -35,21 +35,23 @@ uint16_t adc_convert_mv(uint16_t value)
 
 void adc_capture(uint16_t *v, uint16_t *i, uint8_t n_pairs)
 {
+	if (n_pairs > MAX_PAIRS) n_pairs = MAX_PAIRS;
+
 	target_samples = 2 * n_pairs;
 	sample_count = 0;
 	capture_done = 0;
 
-	ADMUX &= 0xF0;                               // start on ADC0
-	ADCSRB = (1 << ADTS1) | (1 << ADTS0);        // trigger: Timer0 compare match A
+	ADMUX = (ADMUX & 0xF0);                       // start on ADC0
+	ADCSRB = (1 << ADTS1) | (1 << ADTS0);         // auto-trigger: Timer0 compare match A
 
-	// Timer0 CTC: 208 ticks at 2MHz = 104us
+	// Timer0 CTC: 200 ticks at 2MHz = 100us
 	TCCR0A = (1 << WGM01);
-	OCR0A  = 207;
+	OCR0A  = 199;
 	TCNT0  = 0;
 	TIFR0  = (1 << OCF0A);
-	TIMSK0 = (1 << OCIE0A);                      // flag must be cleared by an ISR
+	TIMSK0 = (1 << OCIE0A);                       // ISR clears the compare flag
 	ADCSRA |= (1 << ADATE) | (1 << ADIE);
-	TCCR0B = (1 << CS00);                        // start timer, no prescale
+	TCCR0B = (1 << CS00);                         // start timer, no prescale
 
 	while (!capture_done) {}
 
@@ -59,14 +61,14 @@ void adc_capture(uint16_t *v, uint16_t *i, uint8_t n_pairs)
 	}
 }
 
-// Empty: only needed so the compare-match flag gets cleared for the auto-trigger
+// Empty: only needed so the compare-match flag is cleared for the auto-trigger
 ISR(TIMER0_COMPA_vect) {}
 
 ISR(ADC_vect)
 {
 	uint8_t n = sample_count;
 
-	raw[n & 1][n >> 1] = ADC;
+	raw[n & 1][n >> 1] = ADC;                     // even = ADC0, odd = ADC1
 	n++;
 	sample_count = n;
 
@@ -77,5 +79,5 @@ ISR(ADC_vect)
 		capture_done = 1;
 		return;
 	}
-	ADMUX = (ADMUX & 0xF0) | (n & 1);            // channel for the NEXT trigger
+	ADMUX = (ADMUX & 0xF0) | (n & 1);             // channel for the NEXT trigger
 }
