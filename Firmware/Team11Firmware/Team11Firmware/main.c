@@ -1,29 +1,35 @@
 #include "common.h"
 #include <avr/interrupt.h>
+#include <util/delay.h>
 #include "adc.h"
-#include "uart.h"
 #include "calculations.h"
+#include "display.h"
 
 int main(void)
 {
-	uint16_t v[SAMPLE_COUNT + 1];
-	uint16_t i[SAMPLE_COUNT + 1];
+	uint16_t v[SAMPLE_COUNT];
+	uint16_t i[SAMPLE_COUNT];
+	uint8_t  loops = 0;
 
-	uart_init();
+	init_display();
 	adc_init();
 	sei();
 
 	while (1) {
-		adc_capture(v, i, SAMPLE_COUNT + 1);
+		adc_capture(v, i, SAMPLE_COUNT);
 
-		float vrms_mv = calc_rms(v, SAMPLE_COUNT) * V_GAIN;     // mV at source
-		float ipk_ma  = calc_peak(i, SAMPLE_COUNT) * I_GAIN;    // mA at load
-		float p_mw    = calc_power(v, i, SAMPLE_COUNT);         // mW
+		float vrms_v = calc_rms(v, SAMPLE_COUNT) * V_GAIN / 1000.0f;   // V
+		float ipk_a  = calc_peak(i, SAMPLE_COUNT) * I_GAIN / 1000.0f;  // A
+		float p_w    = calc_power(v, i, SAMPLE_COUNT) / 1000.0f;       // W
 
-		uart_puts("Vrms: "); uart_put_float1(vrms_mv / 1000.0f); uart_puts(" V\r\n");
-		uart_puts("Ipk:  "); uart_put_float1(ipk_ma);            uart_puts(" mA\r\n");
-		uart_puts("P:    "); uart_put_float1(p_mw);              uart_puts(" mW\r\n\r\n");
+		// Rotate through the quantities, about 2 s each
+		switch ((loops / 20) % 3) {
+			case 0:  display_show_number(vrms_v, SEG_U); break;
+			case 1:  display_show_number(ipk_a,  SEG_A); break;
+			default: display_show_number(p_w,    SEG_P); break;
+		}
+		loops++;
 
-		for (volatile uint32_t d = 0; d < 100000UL; d++) {}     // crude delay
+		_delay_ms(100);
 	}
 }
