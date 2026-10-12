@@ -43,3 +43,21 @@ void uart_put_uint(uint16_t value)
 		uart_putc(digits[--n]);
 	}
 }
+
+void uart_put_uint32(uint32_t value)
+{
+	char d[10];
+	uint8_t n = 0;
+	if (value == 0) { uart_putc('0'); return; }
+	while (value > 0) { d[n++] = '0' + (value % 10); value /= 10; }
+	while (n > 0) uart_putc(d[--n]);
+}
+
+void uart_put_float1(float x)
+{
+	if (x < 0) { uart_putc('-'); x = -x; }
+	uint32_t tenths = (uint32_t)(x * 10.0f + 0.5f);
+	uart_put_uint32(tenths / 10);
+	uart_putc('.');
+	uart_putc('0' + (tenths % 10));
+}
