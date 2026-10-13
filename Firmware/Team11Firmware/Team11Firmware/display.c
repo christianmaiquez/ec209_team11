@@ -40,7 +40,7 @@ void init_display(void)
 	// Timer1 CTC, prescaler 8: 2MHz / 8 = 250kHz, 2500 ticks = 10ms
 	TCCR1A = 0;
 	TCCR1B = (1 << WGM12) | (1 << CS11);
-	OCR1A  = 2499;
+	OCR1A  = 999;
 	TIMSK1 = (1 << OCIE1A);
 }
 

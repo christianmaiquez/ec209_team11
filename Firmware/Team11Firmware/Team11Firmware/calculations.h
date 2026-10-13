@@ -4,8 +4,8 @@
 #include <stdint.h>
 
 // ---- Change these to match your hardware ----
-#define V_GAIN                 14.1f    // source volts per ADC volt
-#define I_GAIN                 2.0f     // load amps per ADC volt (= mA per mV)
+#define V_GAIN                 25.1f    // source volts per ADC volt -closer look at this needed
+#define I_GAIN                 1.1f     // load amps per ADC volt (= mA per mV)
 #define COS_THETA              0.9511f  // cos(2*pi*f*Ts): 500Hz, 100us between a V sample and the next I sample
 #define SAMPLES_PER_CYCLE_X10  100      // 500Hz and 200us per sample of one channel = 10.0
 
