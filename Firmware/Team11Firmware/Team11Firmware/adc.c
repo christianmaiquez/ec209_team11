@@ -3,7 +3,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-#define ADC_VREF_MV   5000UL
+#define ADC_VREF_MV   5059UL
 #define ADC_MAX_COUNT 1023UL
 #define MAX_PAIRS     40          // must be >= SAMPLE_COUNT
 
