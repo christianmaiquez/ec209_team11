@@ -31,9 +31,26 @@ float calc_rms(const uint16_t *voltage, uint8_t number_of_samples)
 }
 
 // Peak of a sine wave from its RMS: Vp = Vrms * sqrt(2)
-float calc_peak(const uint16_t *voltage, uint8_t number_of_samples)
+float calc_peak_from_rms(const uint16_t *voltage, uint8_t number_of_samples)
 {
 	return calc_rms(voltage, number_of_samples) * SQUARE_ROOT_OF_2;
+}
+
+// Largest AC excursion actually sampled. With ~10 samples per cycle this can
+// read up to ~5% low because a sample may miss the crest.
+float calc_peak_sampled(const uint16_t *voltage, uint8_t number_of_samples)
+{
+	float offset = average(voltage, number_of_samples);
+	float peak = 0;
+
+	for (uint8_t sample = 0; sample < number_of_samples; sample++) {
+		float ac_part = fabsf(voltage[sample] - offset);
+		if (ac_part > peak) {
+			peak = ac_part;
+		}
+	}
+
+	return peak;
 }
 
 // Real power = average of (voltage x current) with both offsets removed.
@@ -44,6 +61,7 @@ uint8_t number_of_samples)
 {
 	float voltage_offset = average(voltage, number_of_samples);
 	float current_offset = average(current, number_of_samples);
+	float cos_theta = cosf(PHASE_RAD);
 	float total_of_products = 0;
 
 	for (uint8_t sample = 0; sample < number_of_samples; sample++) {
@@ -57,8 +75,8 @@ uint8_t number_of_samples)
 		total_of_products += voltage_sum * current_ac_part;
 	}
 
-	// Factor 2 (two voltage samples summed) and COS_THETA correction applied once
-	float average_power = total_of_products / (2.0f * COS_THETA * number_of_samples);  // mV x mV
+	// Factor 2 (two voltage samples summed) and cos(theta) correction applied once
+	float average_power = total_of_products / (2.0f * cos_theta * number_of_samples);  // mV x mV
 
 	// mV (source) x mA (load) = uW, divide by 1000 for mW
 	return average_power * V_GAIN * I_GAIN / 1000.0f;
@@ -84,8 +102,9 @@ void measure_capture(void)
 	#endif
 }
 
-float measure_vrms_v(void)   { return calc_rms(sample_v, SAMPLE_COUNT)  * V_GAIN / 1000.0f; }
-float measure_ipk_a(void)    { return calc_peak(sample_i, SAMPLE_COUNT) * I_GAIN / 1000.0f; }
-float measure_power_w(void)  { return calc_power(sample_v, sample_i, SAMPLE_COUNT) / 1000.0f; }
-float measure_v_dc_mv(void)  { return average(sample_v, SAMPLE_COUNT); }
-float measure_i_dc_mv(void)  { return average(sample_i, SAMPLE_COUNT); }
+float measure_vrms_v(void)         { return calc_rms(sample_v, SAMPLE_COUNT) * V_GAIN / 1000.0f; }
+float measure_ipk_a(void)          { return calc_peak_from_rms(sample_i, SAMPLE_COUNT) * I_GAIN / 1000.0f; }
+float measure_ipk_sampled_a(void)  { return calc_peak_sampled(sample_i, SAMPLE_COUNT) * I_GAIN / 1000.0f; }
+float measure_power_w(void)        { return calc_power(sample_v, sample_i, SAMPLE_COUNT) / 1000.0f; }
+float measure_v_dc_mv(void)        { return average(sample_v, SAMPLE_COUNT); }
+float measure_i_dc_mv(void)        { return average(sample_i, SAMPLE_COUNT); }
