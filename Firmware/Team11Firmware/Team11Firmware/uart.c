@@ -39,7 +39,7 @@ static void put_uint16(uint16_t value)
 
 	do {
 		digits[n++] = '0' + (value % 10);   // Converts digits to ASCII character for UART
-		value /= 10;
+		value /= 10; // Integer division drops the last digit
 	} while (value > 0);
 
 	// Digits come out lowest first, so they are stored and sent in reverse.
@@ -48,24 +48,17 @@ static void put_uint16(uint16_t value)
 	}
 }
 
-// This helper function turns our values into float values with decimals for improved accuracy
+// This helper function sends a float as text with 2 decimal places
 static void uart_put_float2(float x)
 {
-	// Round first, then decide on the sign
-	float magnitude = (x < 0.0f) ? -x : x;
-	if (magnitude > 655.35f) magnitude = 655.35f;
-	uint16_t hundredths = (uint16_t)(magnitude * 100.0f + 0.5f);
+	if (x < 0.0f)    x = 0.0f;                              // power can dip below 0 from noise
+	if (x > 655.35f) x = 655.35f;                           // limit to what a uint16_t can hold
+	uint16_t hundredths = (uint16_t)(x * 100.0f + 0.5f);    // +0.5 rounds to the nearest hundredth
 
-	// Used in case our value is negative
-	if (x < 0.0f && hundredths != 0) {
-		uart_putc('-');
-	}
-	
-	// Formats our number with decimals put to 2 decimal places
-	put_uint16(hundredths / 100);
+	put_uint16(hundredths / 100);               // whole part
 	uart_putc('.');
-	uart_putc('0' + (hundredths % 100) / 10);
-	uart_putc('0' + hundredths % 10);
+	uart_putc('0' + (hundredths % 100) / 10);   // tenths
+	uart_putc('0' + hundredths % 10);           // hundredths
 }
 
 // SENDING VALUES THROUGH TO TERMINAL
