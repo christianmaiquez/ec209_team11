@@ -31,7 +31,7 @@ static volatile uint8_t disp_characters[4];   // Keeps track of the four numbers
 
 // This function sets the display pins as outputs (all low, digits off) and starts
 // Timer1 to refresh one digit every 4 ms.
-void init_display(void)
+void display_init(void)
 {
 	SH_DDR |= (1 << SH_CP) | (1 << SH_DS) | (1 << SH_ST);
 	DDRD   |= DIGIT_MASK;

@@ -10,15 +10,16 @@
 
 int main(void)
 {
+	// Sets up UART, ADC and Display
 	uart_init();
-	init_display();
+	display_init();
 	adc_init();
-	sei();
+	sei(); // Turns on global interrupts
 
 	while (1) {
 		measure_capture();       // 40 fresh samples of v and i
-		uart_print_report();     // terminal: V, I and P
-		display_show_next();     // 7-segment: next of U, A, P
-		_delay_ms(SHOW_TIME_MS);
+		uart_print_report();     // Prints Vrms, Ipk and P to terminal
+		display_show_next();     // Shows either U, A or P on the display depending on whats next
+		_delay_ms(SHOW_TIME_MS); 
 	}
 }

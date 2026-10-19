@@ -4,7 +4,7 @@
 #include <avr/interrupt.h>
 
 #define ADC_VREF_MV   5059UL    // measured AVCC
-#define ADC_MAX_COUNT 1023UL
+#define ADC_MAX_COUNT 1023UL	// Max count of the 10 bit ADC
 
 static uint16_t *volatile buf[2];                     // where the ISR stores: [0] = voltage, [1] = current
 static volatile uint8_t sample_count, target_samples;
